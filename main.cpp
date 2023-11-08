@@ -2,6 +2,7 @@
 #include <vector>
 #include <unordered_map>
 #include <random>
+#include <algorithm>
 
 /*
  * Orderings: [F, R, B, L, U, D]
@@ -127,7 +128,7 @@ int main() {
         auto neighbors = adjMat[second[0]][second[1]][second[2]];
         for(auto neighbor : neighbors) {
             auto neighbor2 = neighbor[1];
-            if (!maze[neighbor2[0]][neighbor2[1]][neighbor2[2]]) {
+            if (!maze[neighbor2[0]][neighbor2[1]][neighbor2[2]] && std::find(frontier->begin(), frontier->end(), neighbor) == frontier->end()) {
                 frontier->push_back(neighbor);
             }
         }
