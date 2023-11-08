@@ -18,7 +18,6 @@
  *      3 -> goal state
  * */
 
-
 void setGoal(std::array<std::array<std::array<int, 5>, 5>, 6>& maze);
 
 
@@ -34,7 +33,6 @@ std::array<int, 3> getLeft(int face, int i, int j) {
       {3, 0, i},
       {3, 4, 4-i}}};
     return left[face];
-
 }
 
 std::array<int, 3> getRight(int face, int i, int j) {
