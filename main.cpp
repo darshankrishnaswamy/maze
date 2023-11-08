@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <random>
 #include <algorithm>
+#include <stack>
 
 /*
  * Orderings: [F, R, B, L, U, D]
@@ -74,6 +75,75 @@ std::array<int, 3> getDown(int face, int i, int j) {
     return down[face];
 }
 
+void prims(std::array<std::array<std::array<int, 5>, 5>, 6>& maze,
+           std::array<std::array<std::array<std::array<std::array<std::array<int, 3>, 2>, 4>, 5>, 5>, 6>& adjMat) {
+    auto frontier = new std::vector<std::array<std::array<int, 3>, 2>>();
+    // start point will always be [0, 2, 2] -> center of front face
+    maze[0][2][2] = 1;
+
+    frontier->push_back({{{0, 2, 1}, {0, 2, 0}}});
+    frontier->push_back({{{0, 2, 3}, {0, 2, 4}}});
+    frontier->push_back({{{0, 1, 2}, {0, 0, 2}}});
+    frontier->push_back({{{0, 3, 2}, {0, 4, 2}}});
+
+    bool stopCondition = false; // need to figure this out
+    while (!stopCondition) {
+        int index = std::rand() % frontier->size(); // better rng might be needed
+        std::array<std::array<int, 3>, 2> removed = (*frontier)[index];
+        frontier->erase(frontier->begin() + index);
+        std::array<int, 3> first = removed[0], second = removed[1];
+        maze[first[0]][first[1]][first[2]] = 1;
+        maze[second[0]][second[1]][second[2]] = 1;
+
+        auto neighbors = adjMat[second[0]][second[1]][second[2]];
+        for(auto neighbor : neighbors) {
+            auto neighbor2 = neighbor[1];
+            if (!maze[neighbor2[0]][neighbor2[1]][neighbor2[2]] && std::find(frontier->begin(), frontier->end(), neighbor) == frontier->end()) {
+                frontier->push_back(neighbor);
+            }
+        }
+        stopCondition = frontier->empty();
+    }
+}
+
+void dfs(std::array<std::array<std::array<int, 5>, 5>, 6>& maze,
+           std::array<std::array<std::array<std::array<std::array<std::array<int, 3>, 2>, 4>, 5>, 5>, 6>& adjMat) {
+    std::stack<std::array<std::array<int, 3>, 2>> stack;
+    std::array<std::array<std::array<bool, 5>, 5>, 6> visited{};
+    maze[0][2][2] = 2;
+    visited[0][2][2] = true;
+    int dir1 = (std::rand() % 2) * 2 - 1;
+    int dir2 = (std::rand() % 2) * 2 - 1;
+    std::array<std::array<int, 3>, 2> initial = {{{0, 2, 2}, {0, 2, 2}}};
+    initial[0][dir1+1] += dir2;
+    initial[1][dir1+1] += dir2 * 2;
+    stack.push(initial);
+    visited[initial[0][0]][initial[0][1]][initial[0][2]] = true;
+    visited[initial[1][0]][initial[1][1]][initial[1][2]] = true;
+    while(!stack.empty()) {
+        std::array<std::array<int, 3>, 2> removed = stack.top();
+        stack.pop();
+        std::array<int, 3> first = removed[0], second = removed[1];
+        maze[first[0]][first[1]][first[2]] = 1;
+        maze[second[0]][second[1]][second[2]] = 1;
+        auto neighbors = adjMat[second[0]][second[1]][second[2]];
+        std::vector<int> validInds;
+        for(int i = 0; i < 4; i++) {
+            auto neighbor2 = neighbors[i][1];
+            if(!visited[neighbor2[0]][neighbor2[1]][neighbor2[2]]) {
+                validInds.push_back(i);
+            }
+        }
+        if(!validInds.empty()) {
+            int ind = validInds[std::rand() % validInds.size()];
+            stack.push(neighbors[ind]);
+            visited[neighbors[ind][0][0]][neighbors[ind][0][1]][neighbors[ind][0][2]] = true;
+            visited[neighbors[ind][1][0]][neighbors[ind][1][1]][neighbors[ind][1][2]] = true;
+            stack.push(removed);
+        }
+    }
+}
+
 int main() {
     std::array<std::array<std::array<int, 5>, 5>, 6> maze{};
     for (auto &i: maze) {
@@ -107,33 +177,9 @@ int main() {
         }
     }
 
-    auto frontier = new std::vector<std::array<std::array<int, 3>, 2>>();
-    // start point will always be [0, 2, 2] -> center of front face
-    maze[0][2][2] = 1;
+    dfs(maze, adjMat);
 
-    frontier->push_back({{{0, 2, 1}, {0, 2, 0}}});
-    frontier->push_back({{{0, 2, 3}, {0, 2, 4}}});
-    frontier->push_back({{{0, 1, 2}, {0, 0, 2}}});
-    frontier->push_back({{{0, 3, 2}, {0, 4, 2}}});
 
-    bool stopCondition = false; // need to figure this out
-    while (!stopCondition) {
-        int index = std::rand() % frontier->size(); // better rng might be needed
-        std::array<std::array<int, 3>, 2> removed = (*frontier)[index];
-        frontier->erase(frontier->begin() + index);
-        std::array<int, 3> first = removed[0], second = removed[1];
-        maze[first[0]][first[1]][first[2]] = 1;
-        maze[second[0]][second[1]][second[2]] = 1;
-
-        auto neighbors = adjMat[second[0]][second[1]][second[2]];
-        for(auto neighbor : neighbors) {
-            auto neighbor2 = neighbor[1];
-            if (!maze[neighbor2[0]][neighbor2[1]][neighbor2[2]] && std::find(frontier->begin(), frontier->end(), neighbor) == frontier->end()) {
-                frontier->push_back(neighbor);
-            }
-        }
-        stopCondition = frontier->empty();
-    }
 
     // print the maze (for debugging purposes)
     for(auto face : maze) {
@@ -146,3 +192,4 @@ int main() {
         std::cout << std::endl;
     }
 }
+
