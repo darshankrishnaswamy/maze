@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
-#include <random>
 #include <algorithm>
 #include <stack>
 
@@ -12,7 +11,16 @@
  * The orientations of U and D are based on a single up/down rotation from the starting configuration
  * Indices in form (face number, i, j).
  * Neighbors in order (l, u, r, d)
+ * Maze states:
+ *      0 -> wall
+ *      1 -> valid user space
+ *      2 -> start space (can also represent user position as they move)
+ *      3 -> goal state
  * */
+
+
+void setGoal(std::array<std::array<std::array<int, 5>, 5>, 6>& maze);
+
 
 std::array<int, 3> getLeft(int face, int i, int j) {
     if(j > 0) {
@@ -104,6 +112,7 @@ void prims(std::array<std::array<std::array<int, 5>, 5>, 6>& maze,
         }
         stopCondition = frontier->empty();
     }
+    setGoal(maze);
 }
 
 void dfs(std::array<std::array<std::array<int, 5>, 5>, 6>& maze,
@@ -140,6 +149,56 @@ void dfs(std::array<std::array<std::array<int, 5>, 5>, 6>& maze,
             visited[neighbors[ind][0][0]][neighbors[ind][0][1]][neighbors[ind][0][2]] = true;
             visited[neighbors[ind][1][0]][neighbors[ind][1][1]][neighbors[ind][1][2]] = true;
             stack.push(removed);
+        }
+    }
+    setGoal(maze);
+
+
+}
+
+void setGoal(std::array<std::array<std::array<int, 5>, 5>, 6>& maze) {
+    /**
+     * Try to make the goal state the middle position on the back face
+     * If not possible, just make it some arbitrary location on the back face
+     * If still not possible, just find something not on the front face
+     *  (guaranteed to exist)
+     */
+    auto& backFace = maze[2];
+    bool found = false;
+    if(backFace[2][2]) {
+        backFace[2][2] = 3;
+        found = true;
+    }
+    if(!found) {
+        for (auto& row : backFace) {
+            if(found)
+                break;
+            for(auto& item : row) {
+                if(found)
+                    break;
+                else if (item) {
+                    item = 3;
+                    found = true;
+                }
+            }
+        }
+    }
+    if(!found) {
+        std::array<int, 4> remainingFaces = {1, 3, 4, 5};
+        for(int faceNum : remainingFaces) {
+            auto face = maze[faceNum];
+            for (auto& row : face) {
+                if(found)
+                    break;
+                for(auto& item : row) {
+                    if(found)
+                        break;
+                    else if (item) {
+                        item = 3;
+                        found = true;
+                    }
+                }
+            }
         }
     }
 }
