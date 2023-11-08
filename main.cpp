@@ -5,21 +5,12 @@
 
 /*
  * Orderings: [F, R, B, L, U, D]
+ * (front, right, back, left, up, down)
+ * The orientations of F, R, B, L are based on horizontal rotations from the starting configuration
+ * The orientations of U and D are based on a single up/down rotation from the starting configuration
+ * Indices in form (face number, i, j).
+ * Neighbors in order (l, u, r, d)
  * */
-// indices in form (face(int), x, y). Orientations relative to starting position
-// (doesn't really matter)
-
-// neighbors in form (l, u, r, d)
-
-/*
- * For each node:
- *      for each direction:
- *          if on same face:
- *              easy
- *          else:
- *              use current face and direction to find next face
- *              set neighbor to that face's next node
- */
 
 std::array<int, 3> getLeft(int face, int i, int j) {
     if(j > 0) {
@@ -111,9 +102,6 @@ int main() {
                 std::array<int, 3> downNeighbor = getDown(faceNum, i, j);
                 adjMat[faceNum][i][j][3][0] = downNeighbor;
                 adjMat[faceNum][i][j][3][1] = getDown(downNeighbor[0], downNeighbor[1], downNeighbor[2]);
-
-
-
             }
         }
     }
@@ -129,7 +117,7 @@ int main() {
 
     bool stopCondition = false; // need to figure this out
     while (!stopCondition) {
-        int index = std::rand() % frontier->size();
+        int index = std::rand() % frontier->size(); // better rng might be needed
         std::array<std::array<int, 3>, 2> removed = (*frontier)[index];
         frontier->erase(frontier->begin() + index);
         std::array<int, 3> first = removed[0], second = removed[1];
@@ -143,9 +131,7 @@ int main() {
                 frontier->push_back(neighbor);
             }
         }
-
-        stopCondition = frontier->size() == 0;
-
+        stopCondition = frontier->empty();
     }
 
     // print the maze (for debugging purposes)
@@ -159,70 +145,3 @@ int main() {
         std::cout << std::endl;
     }
 }
-
-/*
- * Probably don't need any of this but keeping it just in case
- * //                // LEFT
-//                if(j > 0) {
-//                    auto loc = adjMat[faceNum][i][j][0];
-//                    loc[0] = faceNum;
-//                    loc[1] = i;
-//                    loc[2] = j-1;
-//                }
-//                else {
-//                    // work
-//                    auto loc = adjMat[faceNum][i][j][0];
-//                    auto next = getLeft(faceNum, i);
-//                    loc[0] = next[0];
-//                    loc[1] = next[1];
-//                    loc[2] = next[2];
-//                }
-//
-//                // UP
-//                if(i > 0) {
-//                    auto loc = adjMat[faceNum][i][j][1];
-//                    loc[0] = faceNum;
-//                    loc[1] = i-1;
-//                    loc[2] = j;
-//                }
-//                else {
-//                    auto loc = adjMat[faceNum][i][j][1];
-//                    auto next = getUp(faceNum, i);
-//                    loc[0] = next[0];
-//                    loc[1] = next[1];
-//                    loc[2] = next[2];
-//                }
-//
-//                // RIGHT
-//                if(j < 4) {
-//                    auto loc = adjMat[faceNum][i][j][2];
-//                    loc[0] = faceNum;
-//                    loc[1] = i;
-//                    loc[2] = j+1;
-//                }
-//                else {
-//                    auto loc = adjMat[faceNum][i][j][2];
-//                    auto next = getRight(faceNum, i);
-//                    loc[0] = next[0];
-//                    loc[1] = next[1];
-//                    loc[2] = next[2];
-//                }
-//
-//                // DOWN
-//                if(i < 4) {
-//                    auto loc = adjMat[faceNum][i][j][3];
-//                    loc[0] = faceNum;
-//                    loc[1] = i+1;
-//                    loc[2] = j;
-//                }
-//                else {
-//                    auto loc = adjMat[faceNum][i][j][3];
-//                    auto next = getDown(faceNum, i);
-//                    loc[0] = next[0];
-//                    loc[1] = next[1];
-//                    loc[2] = next[2];
-//                }
-//            }
-        }
-    }
- * */
