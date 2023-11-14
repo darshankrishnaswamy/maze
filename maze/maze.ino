@@ -1,4 +1,16 @@
+#include <Adafruit_NeoPixel.h>
+#ifdef __AVR__
+ #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
+#endif
 
+// Which pin on the Arduino is connected to the NeoPixels?
+// On a Trinket or Gemma we suggest changing this to 1:
+#define LED_PIN    6
+
+// How many NeoPixels are attached to the Arduino?
+#define LED_COUNT 150
+
+Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 /*
  * Orderings: [F, R, B, L, U, D]
  * (front, right, back, left, up, down)
@@ -13,18 +25,6 @@
  *      3 -> goal state
  * */
 
-
-
-void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(115200);
-  Serial.println("Here");
-  generateMaze();
-}
-
-void loop() {
-
-}
 
 byte * getLeft(byte face, byte i, byte j) {
     if(j > 0) {
@@ -136,7 +136,6 @@ void setGoal(byte (&maze)[6][5][5]) {
      * If still not possible, just find something not on the front face
      *  (guaranteed to exist)
      */
-    Serial.println("Starting setGoal");
     auto& backFace = maze[2];
     bool found = false;
     if(backFace[2][2]) {
@@ -215,12 +214,6 @@ void dfs(byte (&maze)[6][5][5],
       for(int j = 0; j < 3; j++) {
         stack[sp][j] = initial[j];
       }
-    // Serial.println(initial[0]%16);
-    // Serial.println(initial[0]/16);
-    // Serial.println(initial[1]%16);
-    // Serial.println(initial[1]/16);
-    // Serial.println(initial[2]%16);
-    // Serial.println(initial[2]/16);
     sp += 1;
     visited[initial[0] % 16][initial[1] % 16][initial[2] % 16] = true;
     visited[initial[0] >> 4][initial[1] >> 4][initial[2] >> 4] = true;
@@ -270,9 +263,7 @@ void dfs(byte (&maze)[6][5][5],
 
 
 
-void generateMaze() {
-  Serial.println("Starting genMaze");
-    byte maze[6][5][5];
+void generateMaze(byte (&maze)[6][5][5]) {
     for (int i = 0; i < 6; i++) {
         for (int j = 0; j < 5; j++) {
             for (int k = 0; k < 5; k++) {
@@ -280,27 +271,10 @@ void generateMaze() {
             }
         }
     }
-    // for(int i = 0; i < 6; i++) {
-    //   for(int j = 0; j < 5; j++) {
-    //     for(int k = 0; k < 5; k++) {
-    //       Serial.print(maze[i][j][k]);
-    //       Serial.print(" ");
-    //     }
-    //     Serial.println("");
-    //   }
-    //   Serial.println("");
-    // }
-    // Serial.println("Here 1");
-
-    // Array<Array<Array<Array<Array<Array<byte, 3>, 2>, 4>, 5>, 5>, 6> adjMat{};
-
-    // every number is between 
-    // byte adjMat[6][5][5][4][2][3];
+  
     byte adjMat[6][5][5][4][3];
     for (int faceNum = 0; faceNum < 6; faceNum++) {
-      // Serial.println(faceNum);
         for (int i = 0; i < 5; i++) {
-          // Serial.print("i ");
             for (int j = 0; j < 5; j++) {
                 byte *leftNeighbor = getLeft(faceNum, i, j);
                 byte *leftNeighbor2 = getLeft(leftNeighbor[0], leftNeighbor[1], leftNeighbor[2]);
@@ -343,11 +317,15 @@ void generateMaze() {
             }
         }
     }
-    Serial.println("going to start dfs");
-
 
     dfs(maze, adjMat);
-    for(int i = 0; i < 6; i++) {
+    
+
+
+}
+
+void printMaze(byte maze[6][5][5]) {
+  for(int i = 0; i < 6; i++) {
       for(int j = 0; j < 5; j++) {
         for(int k = 0; k < 5; k++) {
           Serial.print(maze[i][j][k]);
@@ -357,10 +335,50 @@ void generateMaze() {
       }
       Serial.println("");
     }
-
-
-
 }
 
+void printArray(byte flatMaze[150]) {
+for(int i = 0; i < 150; i++) {
+    Serial.print(flatMaze[i]);
+    Serial.print(" ");
+  }
+  Serial.println();
+}
 
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  byte maze[6][5][5];
+  generateMaze(maze);
+  
+  byte flatMaze[150];
+  for(int i = 0; i < 6; i++) {
+      for(int j = 0; j < 5; j++) {
+        for(int k = 0; k < 5; k++) {
+          flatMaze[25*i + 5*j + k] = maze[i][j][k];
+        }
+      }
+  }
+  
 
+      // These lines are specifically to support the Adafruit Trinket 5V 16 MHz.
+    // Any other board, you can remove this part (but no harm leaving it):
+  #if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
+    clock_prescale_set(clock_div_1);
+  #endif
+    // END of Trinket-specific code.
+    uint32_t colors[4] = {strip.Color(255, 0, 0), strip.Color(0, 255, 0), strip.Color(0, 0, 255), strip.Color(85, 85, 85) };
+
+    strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
+    strip.show();            // Turn OFF all pixels ASAP
+    strip.setBrightness(5); // Set BRIGHTNESS to about 1/5 (max = 255)
+  
+  for(int i=0; i<strip.numPixels(); i++) { // For each pixel in strip...
+    strip.setPixelColor(i, colors[flatMaze[i]]);         //  Set pixel's color (in RAM)
+    strip.show();                          //  Update strip to match
+  }
+  }
+
+void loop() {
+
+}
