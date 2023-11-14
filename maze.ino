@@ -17,14 +17,13 @@
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println("Here");
-  // main();
+  generateMaze();
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  Serial.println("H");
+
 }
 
 byte * getLeft(byte face, byte i, byte j) {
@@ -32,15 +31,16 @@ byte * getLeft(byte face, byte i, byte j) {
         byte *out = new byte[3] {face, i, j+1};
         return out;
     }
-    auto left = new byte[6][3] {
+    byte left[6][3] = {
       {3, i, 4},
       {0, i, 4},
       {1, i, 4},
       {2, i, 4},
       {3, 0, i},
       {3, 4, 4-i}
-      };
-    return left[face];
+    };
+    byte *out = new byte[3] {left[face][0], left[face][1], left[face][2]};
+    return out;
 }
 
 byte * getRight(byte face, byte i, byte j) {
@@ -48,7 +48,7 @@ byte * getRight(byte face, byte i, byte j) {
       byte *out = new byte[3] {face, i, j+1};
       return out;
     }
-    auto right = new byte[6][3] {
+    byte right[6][3] = {
               {1, i, 0},
               {2, i, 0},
               {3, i, 0},
@@ -56,7 +56,8 @@ byte * getRight(byte face, byte i, byte j) {
               {1, 0, 4-i},
               {1, 4, i}
       };
-    return right[face];
+    byte *out = new byte[3] {right[face][0], right[face][1], right[face][2]};
+    return out;
 }
 
 byte * getUp(byte face, byte i, byte j) {
@@ -64,7 +65,7 @@ byte * getUp(byte face, byte i, byte j) {
       byte *out = new byte[3] {face, i-1, j};
       return out;
     }
-    auto up = new byte[6][3] {
+    byte up[6][3] = {
             {4, 4, j},
             {4, 4-j, 4},
             {4, 0, 4-j},
@@ -72,7 +73,8 @@ byte * getUp(byte face, byte i, byte j) {
             {2, 0, 4-j},
             {0, 4, j}
     };
-    return up[face];
+    byte *out = new byte[3] {up[face][0], up[face][1], up[face][2]};
+    return out;
 
 }
 
@@ -81,7 +83,7 @@ byte * getDown(byte face, byte i, byte j) {
       byte *out = new byte[3] {face, i+1, j};
       return out; 
     }
-    auto down = new byte[6][3] {
+    byte down[6][3] = {
             {5, 0, j},
             {5, j, 4},
             {5, 4, 4-j},
@@ -89,7 +91,8 @@ byte * getDown(byte face, byte i, byte j) {
             {0, 0, j},
             {2, 4, 4-j}
     };
-    return down[face];
+    byte *out = new byte[3] {down[face][0], down[face][1], down[face][2]};
+    return out;
   
 }
 
@@ -133,6 +136,7 @@ void setGoal(byte (&maze)[6][5][5]) {
      * If still not possible, just find something not on the front face
      *  (guaranteed to exist)
      */
+    Serial.println("Starting setGoal");
     auto& backFace = maze[2];
     bool found = false;
     if(backFace[2][2]) {
@@ -177,84 +181,87 @@ void setGoal(byte (&maze)[6][5][5]) {
 }
 
 void dfs(byte (&maze)[6][5][5],
-            byte (&adjMat)[6][5][5][4][2][3]) {
-    byte stack[100][2][3];
-    byte sp = 0;
-    for(byte i = 0; i < 100; i++) {
-      for(byte j = 0; j < 2; j++) {
-        stack[i][j][0] = 0;
-        stack[i][j][1] = 0;
-        stack[i][j][2] = 0;
+            byte (&adjMat)[6][5][5][4][3]) {
+    byte stack[150][3];
+    int sp = 0;
+    for(int i = 0; i < 60; i++) {
+      for(int j = 0; j < 3; j++) {
+        stack[i][j] = 0;
       }
     }
     // Array<Array<Array<byte, 3>, 2>> stack;
     bool visited[6][5][5];
-    for(byte i = 0; i < 6; i++) {
-      for(byte j = 0; j < 5; j++) {
-        for(byte k = 0; k < 5; k++) {
+    for(int i = 0; i < 6; i++) {
+      for(int j = 0; j < 5; j++) {
+        for(int k = 0; k < 5; k++) {
           visited[i][j][k] = false;
         }
       }
     }
     maze[0][2][2] = 2;
     visited[0][2][2] = true;
-    byte dir1 = (rand() % 2) * 2 - 1;
-    byte dir2 = (rand() % 2) * 2 - 1;
-    byte initial[2][3] = {{0, 2, 2}, {0, 2, 2}};
-    initial[0][dir1+1] += dir2;
-    initial[1][dir1+1] += dir2 * 2;
-    for(byte i = 0; i < 2; i++) {
-      for(byte j = 0; j < 3; j++) {
-        stack[sp][i][j] = initial[i][j];
+    int dir1 = (random(2)) * 2 - 1;
+    int dir2 = (random(2)) * 2 - 1;
+    byte initial[3] = {0, 0, 0};
+    initial[0] |= 0;
+    initial[0] |= (0 << 4);
+    initial[1] |= 2;
+    initial[1] |= (2 << 4);
+    initial[2] |= 2;
+    initial[2] |= (2 << 4);
+    // byte initial[2][3] = {{0, 2, 2}, {0, 2, 2}};
+    initial[dir1+1] += dir2;
+    initial[dir1+1] += (dir2 * 2) << 4;
+      for(int j = 0; j < 3; j++) {
+        stack[sp][j] = initial[j];
       }
-    }
+    // Serial.println(initial[0]%16);
+    // Serial.println(initial[0]/16);
+    // Serial.println(initial[1]%16);
+    // Serial.println(initial[1]/16);
+    // Serial.println(initial[2]%16);
+    // Serial.println(initial[2]/16);
     sp += 1;
-    visited[initial[0][0]][initial[0][1]][initial[0][2]] = true;
-    visited[initial[1][0]][initial[1][1]][initial[1][2]] = true;
-    byte stopCondition = false;
+    visited[initial[0] % 16][initial[1] % 16][initial[2] % 16] = true;
+    visited[initial[0] >> 4][initial[1] >> 4][initial[2] >> 4] = true;
+    bool stopCondition = false;
     while(!stopCondition) {
-        byte removed[2][3];
-        for(byte i = 0; i < 2; i++) {
-          for(byte j = 0; j < 3; j++) {
-            removed[i][j] = stack[sp-1][i][j];
-          }
+        byte removed[3];
+        
+        for(int j = 0; j < 3; j++) {
+          removed[j] = stack[sp-1][j];
         }
         // stack.pop_back();
         sp -= 1;
-        maze[removed[0][0]][removed[0][1]][removed[0][2]] = 1;
-        maze[removed[1][0]][removed[1][1]][removed[1][2]] = 1;
-        auto neighbors = adjMat[removed[1][0]][removed[1][1]][removed[1][2]];
-        bool validInds[4];
-        for(byte i = 0; i < 4; i++) {
-          validInds[i] = false;
-        }
-        byte numValid = 0;
-        for(byte i = 0; i < 4; i++) {
-            auto neighbor2 = neighbors[i][1];
-            if(!visited[neighbor2[0]][neighbor2[1]][neighbor2[2]]) {
+        maze[removed[0] % 16][removed[1] % 16][removed[2] % 16] = 1;
+        maze[removed[0] >> 4][removed[1] >> 4][removed[2] >> 4] = 1;
+        auto neighbors = adjMat[removed[0] >> 4][removed[1] >> 4][removed[2] >> 4];
+        int validInds[4];
+        int numValid = 0;
+        for(int i = 0; i < 4; i++) {
+            auto neighbor2 = neighbors[i];
+            if(!visited[neighbor2[0] >> 4][neighbor2[1] >> 4][neighbor2[2] >> 4] && !visited[neighbor2[0] % 16][neighbor2[1] % 16][neighbor2[2] % 16]) {
                 validInds[numValid] = i;
                 numValid++;
             }
         }
         if(numValid) {
-            byte ind = validInds[rand() % numValid];
-            for(byte i = 0; i < 2; i++) {
-              for(byte j = 0; j < 3; j++) {
-                stack[sp][i][j] = neighbors[ind][i][j];
-              }
-            }
-            sp--;
-            // stack.push(neighbors[ind]);
-            visited[neighbors[ind][0][0]][neighbors[ind][0][1]][neighbors[ind][0][2]] = true;
-            visited[neighbors[ind][1][0]][neighbors[ind][1][1]][neighbors[ind][1][2]] = true;
-            for(byte i = 0; i < 2; i++) {
-              for(byte j = 0; j < 3; j++) {
-                stack[sp][i][j] = removed[i][j];
-              }
+            int ind = validInds[random(numValid)];
+            for(int j = 0; j < 3; j++) {
+              stack[sp][j] = neighbors[ind][j];
+            
             }
             sp++;
+            // stack.push(neighbors[ind]);
+            visited[neighbors[ind][0] % 16][neighbors[ind][1] % 16][neighbors[ind][2] % 16] = true;
+            visited[neighbors[ind][0] >> 4][neighbors[ind][1] >> 4][neighbors[ind][2] >> 4] = true;
+            for(int j = 0; j < 3; j++) {
+              stack[sp][j] = removed[j];
+            }
+            
+            sp++;
         }
-        stopCondition = (sp == 0);
+        stopCondition = (maze[2][2][2] != 0);
     }
     setGoal(maze);
 
@@ -263,57 +270,86 @@ void dfs(byte (&maze)[6][5][5],
 
 
 
-int main() {
+void generateMaze() {
+  Serial.println("Starting genMaze");
     byte maze[6][5][5];
-    for (auto &i: maze) {
-        for (auto &j: i) {
-            for (byte &k: j) {
-                k = 0; // wall
+    for (int i = 0; i < 6; i++) {
+        for (int j = 0; j < 5; j++) {
+            for (int k = 0; k < 5; k++) {
+                maze[i][j][k] = 0; // wall
             }
         }
     }
+    // for(int i = 0; i < 6; i++) {
+    //   for(int j = 0; j < 5; j++) {
+    //     for(int k = 0; k < 5; k++) {
+    //       Serial.print(maze[i][j][k]);
+    //       Serial.print(" ");
+    //     }
+    //     Serial.println("");
+    //   }
+    //   Serial.println("");
+    // }
+    // Serial.println("Here 1");
 
     // Array<Array<Array<Array<Array<Array<byte, 3>, 2>, 4>, 5>, 5>, 6> adjMat{};
-    byte adjMat[6][5][5][4][2][3];
-    for (byte faceNum = 0; faceNum < 6; faceNum++) {
-        for (byte i = 0; i < 5; i++) {
-            for (byte j = 0; j < 5; j++) {
+
+    // every number is between 
+    // byte adjMat[6][5][5][4][2][3];
+    byte adjMat[6][5][5][4][3];
+    for (int faceNum = 0; faceNum < 6; faceNum++) {
+      // Serial.println(faceNum);
+        for (int i = 0; i < 5; i++) {
+          // Serial.print("i ");
+            for (int j = 0; j < 5; j++) {
                 byte *leftNeighbor = getLeft(faceNum, i, j);
                 byte *leftNeighbor2 = getLeft(leftNeighbor[0], leftNeighbor[1], leftNeighbor[2]);
-                for(byte k = 0; k < 3; k++) {
-                  adjMat[faceNum][i][j][0][0][k] = leftNeighbor[k];
-                  adjMat[faceNum][i][j][0][1][k] = leftNeighbor2[k];
+                for(int k = 0; k < 3; k++) {
+                  adjMat[faceNum][i][j][0][k] &= 0;
+                  adjMat[faceNum][i][j][0][k] |= leftNeighbor[k];
+                  adjMat[faceNum][i][j][0][k] |= (leftNeighbor2[k] << 4);
                 }
-                
+                delete leftNeighbor;
+                delete leftNeighbor2;                
 
                 byte *upNeighbor = getUp(faceNum, i, j);
                 byte *upNeighbor2 = getUp(upNeighbor[0], upNeighbor[1], upNeighbor[2]);
-                for(byte k = 0; k < 3; k++) {
-                  adjMat[faceNum][i][j][1][0][k] = upNeighbor[k];
-                  adjMat[faceNum][i][j][1][1][k] = upNeighbor2[k];
+                for(int k = 0; k < 3; k++) {
+                  adjMat[faceNum][i][j][1][k] &= 0;
+                  adjMat[faceNum][i][j][1][k] |= upNeighbor[k];
+                  adjMat[faceNum][i][j][1][k] |= (upNeighbor2[k] << 4);
                 }
+                delete upNeighbor;
+                delete upNeighbor2;    
 
                 byte *rightNeighbor = getRight(faceNum, i, j);
                 byte *rightNeighbor2 = getRight(rightNeighbor[0], rightNeighbor[1], rightNeighbor[2]);
-                for(byte k = 0; k < 3; k++) {
-                  adjMat[faceNum][i][j][2][0][k] = rightNeighbor[k];
-                  adjMat[faceNum][i][j][2][1][k] = rightNeighbor2[k];
+                for(int k = 0; k < 3; k++) {
+                  adjMat[faceNum][i][j][2][k] &= 0;
+                  adjMat[faceNum][i][j][2][k] |= rightNeighbor[k];
+                  adjMat[faceNum][i][j][2][k] |= (rightNeighbor2[k] << 4);
                 }
-
+                delete rightNeighbor;
+                delete rightNeighbor2;    
                 byte *downNeighbor = getDown(faceNum, i, j);
                 byte *downNeighbor2 = getDown(downNeighbor[0], downNeighbor[1], downNeighbor[2]);
-                for(byte k = 0; k < 3; k++) {
-                  adjMat[faceNum][i][j][3][0][k] = downNeighbor[k];
-                  adjMat[faceNum][i][j][3][1][k] = downNeighbor2[k];
+                for(int k = 0; k < 3; k++) {
+                  adjMat[faceNum][i][j][3][k] &= 0;
+                  adjMat[faceNum][i][j][3][k] |= downNeighbor[k];
+                  adjMat[faceNum][i][j][3][k] |= (downNeighbor2[k] << 4);
                 }
+                delete downNeighbor;
+                delete downNeighbor2;    
             }
         }
     }
+    Serial.println("going to start dfs");
+
 
     dfs(maze, adjMat);
-    for(byte i = 0; i < 6; i++) {
-      for(byte j = 0; j < 5; j++) {
-        for(byte k = 0; k < 5; k++) {
+    for(int i = 0; i < 6; i++) {
+      for(int j = 0; j < 5; j++) {
+        for(int k = 0; k < 5; k++) {
           Serial.print(maze[i][j][k]);
           Serial.print(" ");
         }
