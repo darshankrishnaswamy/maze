@@ -10,7 +10,9 @@
 // How many NeoPixels are attached to the Arduino?
 #define LED_COUNT 150
 
-#define THRESHOLD 10
+#define THRESHOLD 5
+
+// These are directions, NOT face numbers
 #define LEFT 0
 #define UP 1
 #define RIGHT 2
@@ -119,38 +121,38 @@ byte * getDown(byte face, byte i, byte j) {
   
 }
 
-// void prims(byte (&maze)[6][5][5],
-//            byte (&adjMat)[6][5][5][4][2][3]) {
-//     auto frontier = new byte[100][2][3](); 
-//     byte index = 0;
-//     // start pobyte will always be [0, 2, 2] -> center of front face
-//     maze[0][2][2] = 1;
-//     byte arr1[2][3] {{0, 2, 1}, {0, 2, 0}};
-//     frontier->push_back(arr1);
-//     frontier->push_back({{{0, 2, 3}, {0, 2, 4}}});
-//     frontier->push_back({{{0, 1, 2}, {0, 0, 2}}});
-//     frontier->push_back({{{0, 3, 2}, {0, 4, 2}}});
+void prims(byte (&maze)[6][5][5],
+           byte (&adjMat)[6][5][5][4][2][3]) {
+    auto frontier = new byte[100][2][3](); 
+    byte index = 0;
+    // start pobyte will always be [0, 2, 2] -> center of front face
+    maze[0][2][2] = 1;
+    byte arr1[2][3] {{0, 2, 1}, {0, 2, 0}};
+    frontier->push_back(arr1);
+    frontier->push_back({{{0, 2, 3}, {0, 2, 4}}});
+    frontier->push_back({{{0, 1, 2}, {0, 0, 2}}});
+    frontier->push_back({{{0, 3, 2}, {0, 4, 2}}});
 
-//     bool stopCondition = false; // need to figure this out
-//     while (!stopCondition) {
-//         byte index = rand() % frontier->size(); // better rng might be needed
-//         Array<Array<byte, 3>, 2> removed = (*frontier)[index];
-//         frontier->erase(frontier->begin() + index);
-//         Array<byte, 3> first = removed[0], second = removed[1];
-//         maze[first[0]][first[1]][first[2]] = 1;
-//         maze[second[0]][second[1]][second[2]] = 1;
+    bool stopCondition = false; // need to figure this out
+    while (!stopCondition) {
+        byte index = rand() % frontier->size(); // better rng might be needed
+        Array<Array<byte, 3>, 2> removed = (*frontier)[index];
+        frontier->erase(frontier->begin() + index);
+        Array<byte, 3> first = removed[0], second = removed[1];
+        maze[first[0]][first[1]][first[2]] = 1;
+        maze[second[0]][second[1]][second[2]] = 1;
 
-//         auto neighbors = adjMat[second[0]][second[1]][second[2]];
-//         for(auto neighbor : neighbors) {
-//             auto neighbor2 = neighbor[1];
-//             if (!maze[neighbor2[0]][neighbor2[1]][neighbor2[2]] && find(frontier->begin(), frontier->end(), neighbor) == frontier->end()) {
-//                 frontier->push_back(neighbor);
-//             }
-//         }
-//         stopCondition = frontier->empty();
-//     }
-//     setGoal(maze);
-// }
+        auto neighbors = adjMat[second[0]][second[1]][second[2]];
+        for(auto neighbor : neighbors) {
+            auto neighbor2 = neighbor[1];
+            if (!maze[neighbor2[0]][neighbor2[1]][neighbor2[2]] && find(frontier->begin(), frontier->end(), neighbor) == frontier->end()) {
+                frontier->push_back(neighbor);
+            }
+        }
+        stopCondition = frontier->empty();
+    }
+    setGoal(maze);
+}
 
 void setGoal(byte (&maze)[6][5][5]) {
     /**
@@ -460,13 +462,6 @@ void setup() {
   
   byte flatMaze[150];
   flatten(officialMaze, flatMaze);
-  // for(int i = 0; i < 6; i++) {
-  //   for(int j = 0; j < 5; j++) {
-  //     for(int k = 0; k < 5; k++) {
-  //       flatMaze[25*i + 5*j + k] = officialMaze[i][j][k];
-  //     }
-  //   }
-  // }
 
 
   mpu.setAccelerometerRange(MPU6050_RANGE_16_G);
@@ -556,6 +551,7 @@ void loop() {
         for(int i=0; i<strip.numPixels(); i++) { // For each pixel in strip...
           strip.setPixelColor(i, colors[0]);         //  Set pixel's color (in RAM)
           strip.show();                          //  Update strip to match
+          delay(20);
         }
       }
     }
