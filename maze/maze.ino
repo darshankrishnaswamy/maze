@@ -10,12 +10,29 @@
 // How many NeoPixels are attached to the Arduino?
 #define LED_COUNT 150
 
+#define THRESHOLD 10
+#define LEFT 0
+#define UP 1
+#define RIGHT 2
+#define DOWN 3
+
+int userx = 0;
+int usery = 2;
+int userz = 2;
+
+byte FINISHED = 0;
+
+byte officialMaze[6][5][5];
+
+
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 Adafruit_MPU6050 mpu;
+
+uint32_t colors[4] = {strip.Color(255, 0, 0), strip.Color(0, 255, 0), strip.Color(0, 0, 255), strip.Color(85, 85, 85) };
 
 /*
  * Orderings: [F, R, B, L, U, D]
@@ -344,21 +361,21 @@ void printMaze(byte maze[6][5][5]) {
 }
 
 
-  void movePlayer(int (&maze)[6][5][5], int curr[3], int direction) {
-    byte *next;
-    if(direction == 0) {
-      next = getLeft(curr[0], curr[1], curr[2]);
-    } else if(direction == 1) {
-      next = getUp(curr[0], curr[1], curr[2]);
-    } else if(direction == 2) {
-      next = getRight(curr[0], curr[1], curr[2]);
-    } else if(direction == 3) {
-      next = getDown(curr[0], curr[1], curr[2]);
-    }
-    maze[curr[0]][curr[1]][curr[2]] = 1;
-    maze[next[0]][next[1]][next[2]] = 2;
-    delete next;
-  }
+  // void movePlayer(byte (&maze)[6][5][5], int curr[3], int direction) {
+  //   byte *next;
+  //   if(direction == 0) {
+  //     next = getLeft(curr[0], curr[1], curr[2]);
+  //   } else if(direction == 1) {
+  //     next = getUp(curr[0], curr[1], curr[2]);
+  //   } else if(direction == 2) {
+  //     next = getRight(curr[0], curr[1], curr[2]);
+  //   } else if(direction == 3) {
+  //     next = getDown(curr[0], curr[1], curr[2]);
+  //   }
+  //   maze[curr[0]][curr[1]][curr[2]] = 1;
+  //   maze[next[0]][next[1]][next[2]] = 2;
+  //   delete next;
+  // }
 
 void printArray(byte flatMaze[150]) {
 for(int i = 0; i < 150; i++) {
@@ -368,10 +385,70 @@ for(int i = 0; i < 150; i++) {
   Serial.println();
 }
 
+
+byte getDirection(byte face, byte x, byte y, byte z) {
+  /*
+  Can be converted to a transition matrix to make it look cleaner but I think thats gonna mess up memory stuff :(
+  */
+
+  // return 0 if left, 1 if up, 2 if right, 3 if down
+
+  if(face == 4) {
+    if(x < -THRESHOLD) return DOWN;
+    else if (x > THRESHOLD) return UP;
+    else if(y < -THRESHOLD) return LEFT;
+    else if(y > THRESHOLD) return RIGHT;
+  }
+  else if(face == 5) {
+    if(x < -THRESHOLD) return UP;
+    else if (x > THRESHOLD) return DOWN;
+    else if(y < -THRESHOLD) return LEFT;
+    else if(y > THRESHOLD) return RIGHT;
+  }
+  if(face == 0) {
+    if(y > THRESHOLD) return RIGHT;
+    else if (y < -THRESHOLD) return LEFT;
+    else if(z < -THRESHOLD) return DOWN;
+    else if(z > THRESHOLD) return UP;
+  }
+  else if(face == 2) {
+    if(y > THRESHOLD) return LEFT;
+    else if (y < -THRESHOLD) return RIGHT;
+    else if(z < -THRESHOLD) return DOWN;
+    else if(z > THRESHOLD) return UP;
+  }
+  if(face == 1) {
+    if(z < -THRESHOLD) return DOWN;
+    else if (z > THRESHOLD) return UP;
+    else if(x > THRESHOLD) return LEFT;
+    else if(x < -THRESHOLD) return RIGHT;
+  }
+  else if(face == 3) {
+    if(z < -THRESHOLD) return DOWN;
+    else if (z > THRESHOLD) return UP;
+    else if(x > THRESHOLD) return RIGHT;
+    else if(x < -THRESHOLD) return LEFT;
+  }
+}
+
+int indexMap(int face, int i, int j) {
+  // FIX THIS
+  return 25*face + 5*i + j;
+}
+
+void flatten(byte (&maze)[6][5][5], byte (&flatMaze)[150]) {
+  for(int face = 0; face < 6; face++) {
+    for(int i = 0; i < 5; i++) {
+      for(int j = 0; j < 5; j++) {
+        flatMaze[indexMap(face, i, j)] = maze[face][i][j];
+      }
+    }
+  }
+}
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
-  byte maze[6][5][5];
 
   if (!mpu.begin()) {
     Serial.println("Failed to find MPU6050 chip");
@@ -379,16 +456,17 @@ void setup() {
       delay(10);
     }
   }
-  generateMaze(maze);
+  generateMaze(officialMaze);
   
   byte flatMaze[150];
-  for(int i = 0; i < 6; i++) {
-      for(int j = 0; j < 5; j++) {
-        for(int k = 0; k < 5; k++) {
-          flatMaze[25*i + 5*j + k] = maze[i][j][k];
-        }
-      }
-  }
+  flatten(officialMaze, flatMaze);
+  // for(int i = 0; i < 6; i++) {
+  //   for(int j = 0; j < 5; j++) {
+  //     for(int k = 0; k < 5; k++) {
+  //       flatMaze[25*i + 5*j + k] = officialMaze[i][j][k];
+  //     }
+  //   }
+  // }
 
 
   mpu.setAccelerometerRange(MPU6050_RANGE_16_G);
@@ -401,7 +479,6 @@ void setup() {
     clock_prescale_set(clock_div_1);
   #endif
     // END of Trinket-specific code.
-    uint32_t colors[4] = {strip.Color(255, 0, 0), strip.Color(0, 255, 0), strip.Color(0, 0, 255), strip.Color(85, 85, 85) };
 
     strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
     strip.show();            // Turn OFF all pixels ASAP
@@ -411,26 +488,77 @@ void setup() {
     strip.setPixelColor(i, colors[flatMaze[i]]);         //  Set pixel's color (in RAM)
     strip.show();                          //  Update strip to match
   }
-  }
+}
 
 void loop() {
- sensors_event_t a, g, temp;
-  mpu.getEvent(&a, &g, &temp);
+  if(!FINISHED) {
+    sensors_event_t a, g, temp;
+      mpu.getEvent(&a, &g, &temp);
 
-  Serial.print("Temperature:");
-  Serial.print(temp.temperature);
-  Serial.print("\tx-acceleration:");
-  Serial.print(a.acceleration.x);
-  Serial.print("\ty-acceleration:");
-  Serial.print(a.acceleration.y);
-  Serial.print("\tz-acceleration:");
-  Serial.print(a.acceleration.z);
-  Serial.print("\tx-gyro:");
-  Serial.print(g.gyro.x);
-  Serial.print("\ty-gyro:");
-  Serial.print(g.gyro.y);
-  Serial.print("\tz-gyro:");
-  Serial.println(g.gyro.z);
+      Serial.print("Temperature:");
+      Serial.print(temp.temperature);
+      Serial.print("\tx-acceleration:");
+      Serial.print(a.acceleration.x);
+      Serial.print("\ty-acceleration:");
+      Serial.print(a.acceleration.y);
+      Serial.print("\tz-acceleration:");
+      Serial.print(a.acceleration.z);
+      Serial.print("\tx-gyro:");
+      Serial.print(g.gyro.x);
+      Serial.print("\ty-gyro:");
+      Serial.print(g.gyro.y);
+      Serial.print("\tz-gyro:");
+      Serial.println(g.gyro.z);
 
-  delay(10);
+      int prevX = userx;
+      int prevY = usery;
+      int prevZ = userz;
+
+      byte direction = getDirection(userx, a.acceleration.x, a.acceleration.y, a.acceleration.z);
+      byte *next;
+      if(direction == LEFT) {
+        next = getLeft(userx, usery, userz);
+      }
+      else if(direction == RIGHT) {
+        next = getRight(userx, usery, userz);
+      }
+      else if(direction == UP) {
+        next = getUp(userx, usery, userz);
+      }
+      else {
+        next = getDown(userx, usery, userz);
+      }
+
+      byte nextX = next[0];
+      byte nextY = next[1];
+      byte nextZ = next[2];
+
+      delete next;
+
+      if(officialMaze[nextX][nextY][nextZ] == 1) {
+        userx = nextX;
+        usery = nextY;
+        userz = nextZ;
+        officialMaze[prevX][prevY][prevZ] = 1;
+        officialMaze[userx][usery][userz] = 2;
+        strip.setPixelColor(indexMap(prevX, prevY, prevZ), colors[1]);
+        strip.setPixelColor(indexMap(nextX, nextY, nextZ), colors[2]);
+      }
+      else if(officialMaze[nextX][nextY][nextZ] == 3) {
+        FINISHED = 1;
+        for(int i = 0; i < 6; i++) {
+          for(int j = 0; j < 5; j++) {
+            for(int k = 0; k < 5; k++) {
+              officialMaze[i][j][k] = 0;
+            }
+          }
+        }
+        for(int i=0; i<strip.numPixels(); i++) { // For each pixel in strip...
+          strip.setPixelColor(i, colors[0]);         //  Set pixel's color (in RAM)
+          strip.show();                          //  Update strip to match
+        }
+      }
+    }
+
+  delay(300);
 }
