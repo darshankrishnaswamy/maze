@@ -22,7 +22,7 @@ int userx = 0;
 int usery = 2;
 int userz = 2;
 
-byte FINISHED = 0;
+bool FINISHED = false;
 
 byte officialMaze[6][5][5];
 
@@ -121,38 +121,38 @@ byte * getDown(byte face, byte i, byte j) {
   
 }
 
-void prims(byte (&maze)[6][5][5],
-           byte (&adjMat)[6][5][5][4][2][3]) {
-    auto frontier = new byte[100][2][3](); 
-    byte index = 0;
-    // start pobyte will always be [0, 2, 2] -> center of front face
-    maze[0][2][2] = 1;
-    byte arr1[2][3] {{0, 2, 1}, {0, 2, 0}};
-    frontier->push_back(arr1);
-    frontier->push_back({{{0, 2, 3}, {0, 2, 4}}});
-    frontier->push_back({{{0, 1, 2}, {0, 0, 2}}});
-    frontier->push_back({{{0, 3, 2}, {0, 4, 2}}});
+// void prims(byte (&maze)[6][5][5],
+//            byte (&adjMat)[6][5][5][4][2][3]) {
+//     auto frontier = new byte[100][2][3](); 
+//     byte index = 0;
+//     // start pobyte will always be [0, 2, 2] -> center of front face
+//     maze[0][2][2] = 1;
+//     byte arr1[2][3] {{0, 2, 1}, {0, 2, 0}};
+//     frontier->push_back(arr1);
+//     frontier->push_back({{{0, 2, 3}, {0, 2, 4}}});
+//     frontier->push_back({{{0, 1, 2}, {0, 0, 2}}});
+//     frontier->push_back({{{0, 3, 2}, {0, 4, 2}}});
 
-    bool stopCondition = false; // need to figure this out
-    while (!stopCondition) {
-        byte index = rand() % frontier->size(); // better rng might be needed
-        Array<Array<byte, 3>, 2> removed = (*frontier)[index];
-        frontier->erase(frontier->begin() + index);
-        Array<byte, 3> first = removed[0], second = removed[1];
-        maze[first[0]][first[1]][first[2]] = 1;
-        maze[second[0]][second[1]][second[2]] = 1;
+//     bool stopCondition = false; // need to figure this out
+//     while (!stopCondition) {
+//         byte index = rand() % frontier->size(); // better rng might be needed
+//         Array<Array<byte, 3>, 2> removed = (*frontier)[index];
+//         frontier->erase(frontier->begin() + index);
+//         Array<byte, 3> first = removed[0], second = removed[1];
+//         maze[first[0]][first[1]][first[2]] = 1;
+//         maze[second[0]][second[1]][second[2]] = 1;
 
-        auto neighbors = adjMat[second[0]][second[1]][second[2]];
-        for(auto neighbor : neighbors) {
-            auto neighbor2 = neighbor[1];
-            if (!maze[neighbor2[0]][neighbor2[1]][neighbor2[2]] && find(frontier->begin(), frontier->end(), neighbor) == frontier->end()) {
-                frontier->push_back(neighbor);
-            }
-        }
-        stopCondition = frontier->empty();
-    }
-    setGoal(maze);
-}
+//         auto neighbors = adjMat[second[0]][second[1]][second[2]];
+//         for(auto neighbor : neighbors) {
+//             auto neighbor2 = neighbor[1];
+//             if (!maze[neighbor2[0]][neighbor2[1]][neighbor2[2]] && find(frontier->begin(), frontier->end(), neighbor) == frontier->end()) {
+//                 frontier->push_back(neighbor);
+//             }
+//         }
+//         stopCondition = frontier->empty();
+//     }
+//     setGoal(maze);
+// }
 
 void setGoal(byte (&maze)[6][5][5]) {
     /**
@@ -435,7 +435,49 @@ byte getDirection(byte face, byte x, byte y, byte z) {
 
 int indexMap(int face, int i, int j) {
   // FIX THIS
-  return 25*face + 5*i + j;
+  if(face == 4) {
+    if(i%2 == 0) {
+      return i*5+4-j;
+    } else {
+      return i*5+j;
+    }
+  }
+  else if(face == 0) {
+    if(i%2 == 0) {
+      return 25 + i*5+j;
+    } else {
+      return 25 + i*5+4-j;
+    }
+  }
+  else if(face == 1) {
+    if(i%2 == 0) {
+      return 50 + i*5+j;
+    } else {
+      return 50 + i*5+4-j;
+    }
+  }
+  else if(face == 2) {
+    if(i%2 == 0) {
+      return 75 + (4-i)*5+j;
+    } else {
+      return 75 + (4-i)*5+4-j;
+    }
+  }
+  else if(face == 3) {
+    if(i%2 == 0) {
+      return 100 + i*5+j;
+    } else {
+      return 100 + i*5+4-j;
+    }
+  }
+  else {
+    if(i%2 == 0) {
+      return 125 + i*5+j;
+    } else {
+      return 125 + i*5+4-j;
+    }
+  }
+  
 }
 
 void flatten(byte (&maze)[6][5][5], byte (&flatMaze)[150]) {
@@ -540,7 +582,7 @@ void loop() {
         strip.setPixelColor(indexMap(nextX, nextY, nextZ), colors[2]);
       }
       else if(officialMaze[nextX][nextY][nextZ] == 3) {
-        FINISHED = 1;
+        FINISHED = true;
         for(int i = 0; i < 6; i++) {
           for(int j = 0; j < 5; j++) {
             for(int k = 0; k < 5; k++) {
