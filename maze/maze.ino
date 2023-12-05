@@ -11,6 +11,12 @@
 #define LED_COUNT 150
 
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <Wire.h>
+Adafruit_MPU6050 mpu;
+
 /*
  * Orderings: [F, R, B, L, U, D]
  * (front, right, back, left, up, down)
@@ -337,6 +343,23 @@ void printMaze(byte maze[6][5][5]) {
     }
 }
 
+
+  void movePlayer(int (&maze)[6][5][5], int curr[3], int direction) {
+    byte *next;
+    if(direction == 0) {
+      next = getLeft(curr[0], curr[1], curr[2]);
+    } else if(direction == 1) {
+      next = getUp(curr[0], curr[1], curr[2]);
+    } else if(direction == 2) {
+      next = getRight(curr[0], curr[1], curr[2]);
+    } else if(direction == 3) {
+      next = getDown(curr[0], curr[1], curr[2]);
+    }
+    maze[curr[0]][curr[1]][curr[2]] = 1;
+    maze[next[0]][next[1]][next[2]] = 2;
+    delete next;
+  }
+
 void printArray(byte flatMaze[150]) {
 for(int i = 0; i < 150; i++) {
     Serial.print(flatMaze[i]);
@@ -349,6 +372,13 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
   byte maze[6][5][5];
+
+  if (!mpu.begin()) {
+    Serial.println("Failed to find MPU6050 chip");
+    while (1) {
+      delay(10);
+    }
+  }
   generateMaze(maze);
   
   byte flatMaze[150];
@@ -359,7 +389,11 @@ void setup() {
         }
       }
   }
-  
+
+
+  mpu.setAccelerometerRange(MPU6050_RANGE_16_G);
+  mpu.setGyroRange(MPU6050_RANGE_250_DEG);
+  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
 
       // These lines are specifically to support the Adafruit Trinket 5V 16 MHz.
     // Any other board, you can remove this part (but no harm leaving it):
@@ -371,7 +405,7 @@ void setup() {
 
     strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
     strip.show();            // Turn OFF all pixels ASAP
-    strip.setBrightness(5); // Set BRIGHTNESS to about 1/5 (max = 255)
+    strip.setBrightness(10); // Set BRIGHTNESS to about 1/5 (max = 255)
   
   for(int i=0; i<strip.numPixels(); i++) { // For each pixel in strip...
     strip.setPixelColor(i, colors[flatMaze[i]]);         //  Set pixel's color (in RAM)
@@ -380,5 +414,23 @@ void setup() {
   }
 
 void loop() {
+ sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
 
+  Serial.print("Temperature:");
+  Serial.print(temp.temperature);
+  Serial.print("\tx-acceleration:");
+  Serial.print(a.acceleration.x);
+  Serial.print("\ty-acceleration:");
+  Serial.print(a.acceleration.y);
+  Serial.print("\tz-acceleration:");
+  Serial.print(a.acceleration.z);
+  Serial.print("\tx-gyro:");
+  Serial.print(g.gyro.x);
+  Serial.print("\ty-gyro:");
+  Serial.print(g.gyro.y);
+  Serial.print("\tz-gyro:");
+  Serial.println(g.gyro.z);
+
+  delay(10);
 }
