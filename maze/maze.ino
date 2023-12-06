@@ -388,7 +388,7 @@ for(int i = 0; i < 150; i++) {
 }
 
 
-byte getDirection(byte face, byte x, byte y, byte z) {
+byte getDirection(byte face, float x, float y, float z) {
   /*
   Can be converted to a transition matrix to make it look cleaner but I think thats gonna mess up memory stuff :(
   */
@@ -500,7 +500,20 @@ void setup() {
       delay(10);
     }
   }
-  generateMaze(officialMaze);
+
+  
+
+  // generateMaze(officialMaze);
+  for(int i = 0; i < 6; i++) {
+    for(int j = 0; j < 5; j++) {
+      for(int k = 0; k < 5; k++) {
+        officialMaze[i][j][k] = 1;
+      }
+    }
+  }
+  officialMaze[4][2][2] = 2;
+
+
   
   byte flatMaze[150];
   flatten(officialMaze, flatMaze);
@@ -553,7 +566,11 @@ void loop() {
       int prevY = usery;
       int prevZ = userz;
 
-      byte direction = getDirection(userx, a.acceleration.x, a.acceleration.y, a.acceleration.z);
+      float ax = a.acceleration.x;
+      float ay = -a.acceleration.y;
+      float az = -a.acceleration.z;
+
+      byte direction = getDirection(userx, ax, ay, az);
       byte *next;
       if(direction == LEFT) {
         next = getLeft(userx, usery, userz);
