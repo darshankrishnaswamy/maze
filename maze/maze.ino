@@ -53,7 +53,7 @@ uint32_t colors[4] = {strip.Color(255, 0, 0), strip.Color(0, 255, 0), strip.Colo
 
 byte * getLeft(byte face, byte i, byte j) {
     if(j > 0) {
-        byte *out = new byte[3] {face, i, j+1};
+        byte *out = new byte[3] {face, i, j-1};
         return out;
     }
     byte left[6][3] = {
@@ -120,6 +120,11 @@ byte * getDown(byte face, byte i, byte j) {
     return out;
   
 }
+
+/* Implementation of prims algo for maze generation. Not in use because it was making mazes with too many paths. 
+   Also written using C++ stdlib so it doesn't compile for arduino which is why it's commented out. Can be adapted to work 
+   Arduino like the DFS algorithm, but currently no need to do that.
+*/
 
 // void prims(byte (&maze)[6][5][5],
 //            byte (&adjMat)[6][5][5][4][2][3]) {
@@ -400,36 +405,43 @@ byte getDirection(byte face, float x, float y, float z) {
     else if (x > THRESHOLD) return UP;
     else if(y < -THRESHOLD) return LEFT;
     else if(y > THRESHOLD) return RIGHT;
+    else return -1;
   }
   else if(face == 5) {
     if(x < -THRESHOLD) return UP;
     else if (x > THRESHOLD) return DOWN;
     else if(y < -THRESHOLD) return LEFT;
     else if(y > THRESHOLD) return RIGHT;
+    else return -1;
+
   }
   if(face == 0) {
     if(y > THRESHOLD) return RIGHT;
     else if (y < -THRESHOLD) return LEFT;
     else if(z < -THRESHOLD) return DOWN;
     else if(z > THRESHOLD) return UP;
+    else return -1;
   }
   else if(face == 2) {
     if(y > THRESHOLD) return LEFT;
     else if (y < -THRESHOLD) return RIGHT;
     else if(z < -THRESHOLD) return DOWN;
     else if(z > THRESHOLD) return UP;
+    else return -1;
   }
   if(face == 1) {
     if(z < -THRESHOLD) return DOWN;
     else if (z > THRESHOLD) return UP;
     else if(x > THRESHOLD) return LEFT;
     else if(x < -THRESHOLD) return RIGHT;
+    else return -1;
   }
   else if(face == 3) {
     if(z < -THRESHOLD) return DOWN;
     else if (z > THRESHOLD) return UP;
     else if(x > THRESHOLD) return RIGHT;
     else if(x < -THRESHOLD) return LEFT;
+    else return -1;
   }
 }
 
@@ -566,23 +578,28 @@ void loop() {
       int prevY = usery;
       int prevZ = userz;
 
-      float ax = a.acceleration.x;
+      float ax = -a.acceleration.x;
       float ay = -a.acceleration.y;
       float az = -a.acceleration.z;
 
       byte direction = getDirection(userx, ax, ay, az);
       byte *next;
+      bool hasNext = false;
       if(direction == LEFT) {
         next = getLeft(userx, usery, userz);
+        hasNext = true;
       }
       else if(direction == RIGHT) {
         next = getRight(userx, usery, userz);
+        hasNext = true;
       }
       else if(direction == UP) {
         next = getUp(userx, usery, userz);
+        hasNext = true;
       }
-      else {
+      else if(direction == DOWN) {
         next = getDown(userx, usery, userz);
+        hasNext = true;
       }
 
       byte nextX = next[0];
@@ -591,7 +608,7 @@ void loop() {
 
       delete next;
 
-      if(officialMaze[nextX][nextY][nextZ] == 1) {
+      if(hasNext && officialMaze[nextX][nextY][nextZ] == 1) {
         userx = nextX;
         usery = nextY;
         userz = nextZ;
@@ -600,7 +617,7 @@ void loop() {
         strip.setPixelColor(indexMap(prevX, prevY, prevZ), colors[1]);
         strip.setPixelColor(indexMap(nextX, nextY, nextZ), colors[2]);
       }
-      else if(officialMaze[nextX][nextY][nextZ] == 3) {
+      else if(hasNext && officialMaze[nextX][nextY][nextZ] == 3) {
         FINISHED = true;
         for(int i = 0; i < 6; i++) {
           for(int j = 0; j < 5; j++) {
