@@ -10,7 +10,7 @@
 // How many NeoPixels are attached to the Arduino?
 #define LED_COUNT 150
 
-#define THRESHOLD 5
+#define THRESHOLD 3
 
 // These are directions, NOT face numbers
 #define LEFT 0
@@ -18,7 +18,7 @@
 #define RIGHT 2
 #define DOWN 3
 
-int userx = 0;
+int userx = 4;
 int usery = 2;
 int userz = 2;
 
@@ -161,14 +161,14 @@ void setGoal(byte (&maze)[6][5][5]) {
      * If still not possible, just find something not on the front face
      *  (guaranteed to exist)
      */
-    auto& backFace = maze[2];
+    auto& bottomFace = maze[5];
     bool found = false;
-    if(backFace[2][2]) {
-        backFace[2][2] = 3;
+    if(bottomFace[2][2]) {
+        bottomFace[2][2] = 3;
         found = true;
     }
     if(!found) {
-        for (auto& row : backFace) {
+        for (auto& row : bottomFace) {
             if(found)
                 break;
             for(auto& item : row) {
@@ -182,7 +182,7 @@ void setGoal(byte (&maze)[6][5][5]) {
         }
     }
     if(!found) {
-        byte remainingFaces[] = {1, 3, 4, 5};
+        byte remainingFaces[] = {1, 3, 0, 2};
         for(byte i = 0; i < 4; i++) {
             byte faceNum = remainingFaces[i];
             auto face = maze[faceNum];
@@ -222,13 +222,13 @@ void dfs(byte (&maze)[6][5][5],
         }
       }
     }
-    maze[0][2][2] = 2;
-    visited[0][2][2] = true;
+    maze[4][2][2] = 2;
+    visited[4][2][2] = true;
     int dir1 = (random(2)) * 2 - 1;
     int dir2 = (random(2)) * 2 - 1;
     byte initial[3] = {0, 0, 0};
-    initial[0] |= 0;
-    initial[0] |= (0 << 4);
+    initial[0] |= 4;
+    initial[0] |= (4 << 4);
     initial[1] |= 2;
     initial[1] |= (2 << 4);
     initial[2] |= 2;
@@ -279,7 +279,7 @@ void dfs(byte (&maze)[6][5][5],
             
             sp++;
         }
-        stopCondition = (maze[2][2][2] != 0);
+        stopCondition = (maze[5][2][2] != 0);
     }
     setGoal(maze);
 
@@ -525,6 +525,8 @@ void setup() {
     strip.setPixelColor(i, colors[flatMaze[i]]);         //  Set pixel's color (in RAM)
     strip.show();                          //  Update strip to match
   }
+  printMaze(officialMaze);
+  delay(10000);
 }
 
 void loop() {
@@ -598,5 +600,7 @@ void loop() {
       }
     }
 
-  delay(300);
+    printMaze(officialMaze);
+
+  delay(3000);
 }
