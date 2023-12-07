@@ -401,46 +401,46 @@ byte getDirection(byte face, float x, float y, float z) {
   // return 0 if left, 1 if up, 2 if right, 3 if down
 
   if(face == 4) {
-    if(x < -THRESHOLD) return DOWN;
-    else if (x > THRESHOLD) return UP;
-    else if(y < -THRESHOLD) return LEFT;
-    else if(y > THRESHOLD) return RIGHT;
+    if(x < -THRESHOLD) return RIGHT;
+    else if (x > THRESHOLD) return LEFT;
+    else if(y < -THRESHOLD) return DOWN;
+    else if(y > THRESHOLD) return UP;
     else return -1;
   }
   else if(face == 5) {
-    if(x < -THRESHOLD) return UP;
-    else if (x > THRESHOLD) return DOWN;
-    else if(y < -THRESHOLD) return LEFT;
-    else if(y > THRESHOLD) return RIGHT;
+    if(x < -THRESHOLD) return RIGHT;
+    else if (x > THRESHOLD) return LEFT;
+    else if(y < -THRESHOLD) return UP;
+    else if(y > THRESHOLD) return DOWN;
     else return -1;
 
   }
   if(face == 0) {
-    if(y > THRESHOLD) return RIGHT;
-    else if (y < -THRESHOLD) return LEFT;
+    if(x < -THRESHOLD) return RIGHT;
+    else if (x > THRESHOLD) return LEFT;
     else if(z < -THRESHOLD) return DOWN;
     else if(z > THRESHOLD) return UP;
     else return -1;
   }
   else if(face == 2) {
-    if(y > THRESHOLD) return LEFT;
-    else if (y < -THRESHOLD) return RIGHT;
+    if(x < -THRESHOLD) return LEFT;
+    else if (x > THRESHOLD) return RIGHT;
     else if(z < -THRESHOLD) return DOWN;
     else if(z > THRESHOLD) return UP;
     else return -1;
   }
-  if(face == 1) {
+  if(face == 3) {
     if(z < -THRESHOLD) return DOWN;
     else if (z > THRESHOLD) return UP;
-    else if(x > THRESHOLD) return LEFT;
-    else if(x < -THRESHOLD) return RIGHT;
+    else if(y < -THRESHOLD) return RIGHT;
+    else if(y > THRESHOLD) return LEFT;
     else return -1;
   }
-  else if(face == 3) {
+  else if(face == 1) {
     if(z < -THRESHOLD) return DOWN;
     else if (z > THRESHOLD) return UP;
-    else if(x > THRESHOLD) return RIGHT;
-    else if(x < -THRESHOLD) return LEFT;
+    else if(y < -THRESHOLD) return LEFT;
+    else if(y > THRESHOLD) return RIGHT;
     else return -1;
   }
 }
