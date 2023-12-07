@@ -515,15 +515,15 @@ void setup() {
 
   
 
-  generateMaze(officialMaze);
-  // for(int i = 0; i < 6; i++) {
-  //   for(int j = 0; j < 5; j++) {
-  //     for(int k = 0; k < 5; k++) {
-  //       officialMaze[i][j][k] = 1;
-  //     }
-  //   }
-  // }
-  // officialMaze[4][2][2] = 2;
+  // generateMaze(officialMaze);
+  for(int i = 0; i < 6; i++) {
+    for(int j = 0; j < 5; j++) {
+      for(int k = 0; k < 5; k++) {
+        officialMaze[i][j][k] = 1;
+      }
+    }
+  }
+  officialMaze[4][2][2] = 2;
 
 
   
@@ -578,9 +578,9 @@ void loop() {
       int prevY = usery;
       int prevZ = userz;
 
-      float ax = a.acceleration.y;
-      float ay = a.acceleration.x;
-      float az = -a.acceleration.z;
+      float ax = a.acceleration.x;
+      float ay = a.acceleration.y;
+      float az = a.acceleration.z;
 
       byte direction = getDirection(userx, ax, ay, az);
       byte *next;
