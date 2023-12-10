@@ -10,6 +10,7 @@
 // How many NeoPixels are attached to the Arduino?
 #define LED_COUNT 150
 
+// m/s^2, how much corresponds to movement (scale of 0 to 9.8)
 #define THRESHOLD 2
 
 // These are directions, NOT face numbers
@@ -18,6 +19,7 @@
 #define RIGHT 2
 #define DOWN 3
 
+// user starting position, gets updated as the user moves
 int userx = 4;
 int usery = 2;
 int userz = 2;
@@ -50,7 +52,8 @@ uint32_t colors[4] = {strip.Color(150, 0, 0), strip.Color(96, 156, 48), strip.Co
  *      3 -> goal state
  * */
 
-
+// takes in a current location (face, i, j) -> maps to the location left of it in the same form (nextface, nexti, nextj)
+// similar functions for right, up, down as well
 byte * getLeft(byte face, byte i, byte j) {
     if(j > 0) {
         byte *out = new byte[3] {face, i, j-1};
@@ -161,10 +164,11 @@ byte * getDown(byte face, byte i, byte j) {
 
 void setGoal(byte (&maze)[6][5][5]) {
     /**
-     * Try to make the goal state the middle position on the back face
-     * If not possible, just make it some arbitrary location on the back face
-     * If still not possible, just find something not on the front face
-     *  (guaranteed to exist)
+     * Try to make the goal state the middle position on the bottom face
+     * If not possible, just make it some arbitrary location on the bottom face
+     * If still not possible, just find something not on the top face
+     * Don't think it ever ends up needing to do anything other than the first case,
+     *  but the backup plan is there just in case
      */
     auto& bottomFace = maze[5];
     bool found = false;
@@ -209,8 +213,12 @@ void setGoal(byte (&maze)[6][5][5]) {
     }
 }
 
+
 void dfs(byte (&maze)[6][5][5],
             byte (&adjMat)[6][5][5][4][3]) {
+    /**
+    * Performs a DFS on the maze to generate the legal positions
+    */
     byte stack[150][3];
     int sp = 0;
     for(int i = 0; i < 150; i++) {
@@ -239,7 +247,6 @@ void dfs(byte (&maze)[6][5][5],
     initial[1] |= (2 << 4);
     initial[2] |= 2;
     initial[2] |= (2 << 4);
-    // byte initial[2][3] = {{0, 2, 2}, {0, 2, 2}};
     initial[(dir1+1)/2+1] += dir2;
     initial[(dir1+1)/2+1] += (dir2 * 2) << 4;
       for(int j = 0; j < 3; j++) {
@@ -255,7 +262,6 @@ void dfs(byte (&maze)[6][5][5],
         for(int j = 0; j < 3; j++) {
           removed[j] = stack[sp-1][j];
         }
-        // stack.pop_back();
         sp -= 1;
         maze[removed[0] % 16][removed[1] % 16][removed[2] % 16] = 1;
         maze[removed[0] >> 4][removed[1] >> 4][removed[2] >> 4] = 1;
@@ -294,6 +300,9 @@ void dfs(byte (&maze)[6][5][5],
 
 
 void generateMaze(byte (&maze)[6][5][5]) {
+  /**
+  * Generates the full maze. Creates the adjacency list, runs the DFS, and sets the start and goal positions.
+  */
     for (int i = 0; i < 6; i++) {
         for (int j = 0; j < 5; j++) {
             for (int k = 0; k < 5; k++) {
@@ -368,22 +377,6 @@ void printMaze(byte maze[6][5][5]) {
 }
 
 
-  // void movePlayer(byte (&maze)[6][5][5], int curr[3], int direction) {
-  //   byte *next;
-  //   if(direction == 0) {
-  //     next = getLeft(curr[0], curr[1], curr[2]);
-  //   } else if(direction == 1) {
-  //     next = getUp(curr[0], curr[1], curr[2]);
-  //   } else if(direction == 2) {
-  //     next = getRight(curr[0], curr[1], curr[2]);
-  //   } else if(direction == 3) {
-  //     next = getDown(curr[0], curr[1], curr[2]);
-  //   }
-  //   maze[curr[0]][curr[1]][curr[2]] = 1;
-  //   maze[next[0]][next[1]][next[2]] = 2;
-  //   delete next;
-  // }
-
 void printArray(byte flatMaze[150]) {
 for(int i = 0; i < 150; i++) {
     Serial.print(flatMaze[i]);
@@ -394,8 +387,9 @@ for(int i = 0; i < 150; i++) {
 
 
 byte getDirection(byte face, float x, float y, float z) {
-  /*
-  Can be converted to a transition matrix to make it look cleaner but I think thats gonna mess up memory stuff :(
+  /**
+  * Uses the current face and the accelerometer readings to determine which direction to move in (or -1 if it's not tilted enough)
+  * Can be converted to a transition matrix to make it look cleaner but would use too much memory, so had to use a lot of if statements.
   */
 
   // return 0 if left, 1 if up, 2 if right, 3 if down
@@ -470,7 +464,9 @@ byte getDirection(byte face, float x, float y, float z) {
 }
 
 int indexMap(int face, int i, int j) {
-  // FIX THIS
+  /**
+  * Maps indices from the 6x5x5 array to the length-150 array used for the LEDs.
+  */
   if(face == 4) {
     if(i%2 == 0) {
       return i*5+4-j;
@@ -537,20 +533,7 @@ void setup() {
     }
   }
 
-  
-
   generateMaze(officialMaze);
-  // for(int i = 0; i < 6; i++) {
-  //   for(int j = 0; j < 5; j++) {
-  //     for(int k = 0; k < 5; k++) {
-  //       officialMaze[i][j][k] = 1;
-  //     }
-  //   }
-  // }
-  // officialMaze[4][2][2] = 2;
-  // officialMaze[5][2][2] = 3;
-
-
   
   byte flatMaze[150];
   flatten(officialMaze, flatMaze);
@@ -605,7 +588,10 @@ void loop() {
 
       float ax = a.acceleration.x;
       float ay = a.acceleration.y;
+      // experimentally determined based on slight tilt of accelerometer in cube
       float az = a.acceleration.z- 2.25;
+
+      // player movement
 
       byte direction = getDirection(userx, ax, ay, az);
       byte *next;
@@ -634,6 +620,7 @@ void loop() {
       delete next;
 
       if(hasNext && officialMaze[nextX][nextY][nextZ] == 1) {
+        // if the user makes a legal move
         userx = nextX;
         usery = nextY;
         userz = nextZ;
@@ -644,6 +631,7 @@ void loop() {
         strip.show();
       }
       else if(hasNext && officialMaze[nextX][nextY][nextZ] == 3) {
+        // if the user reaches the goal state
         FINISHED = true;
         for(int i = 0; i < 6; i++) {
           for(int j = 0; j < 5; j++) {
